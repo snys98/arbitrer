@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using Newtonsoft.Json;
 using System.Threading;
 using System.Text;
 using System;
@@ -12,9 +11,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Text.Json;
 using Arbitrer.Messages;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 
 namespace Arbitrer.RabbitMQ
 {
@@ -152,7 +150,7 @@ namespace Arbitrer.RabbitMQ
     /// <returns>The task representing the response message.</returns>
     public async Task<Messages.ResponseMessage<TResponse>> Dispatch<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
     {
-      var message = JsonConvert.SerializeObject(request, options.SerializerSettings);
+      var message = JsonSerializer.Serialize(request, options.SerializerSettings);
 
       var correlationId = Guid.NewGuid().ToString();
 
@@ -169,7 +167,7 @@ namespace Arbitrer.RabbitMQ
       cancellationToken.Register(() => _callbackMapper.TryRemove(correlationId, out var tmp));
       var result = await tcs.Task;
 
-      return JsonConvert.DeserializeObject<Messages.ResponseMessage<TResponse>>(result, options.SerializerSettings);
+      return JsonSerializer.Deserialize<Messages.ResponseMessage<TResponse>>(result, options.SerializerSettings);
     }
 
     /// <summary>
@@ -181,7 +179,7 @@ namespace Arbitrer.RabbitMQ
     /// <returns>A task representing the asynchronous notification operation.</returns>
     public Task Notify<TRequest>(TRequest request, CancellationToken cancellationToken = default) where TRequest : INotification
     {
-      var message = JsonConvert.SerializeObject(request, options.SerializerSettings);
+      var message = JsonSerializer.Serialize(request, options.SerializerSettings);
 
       logger.LogInformation($"Sending message to: {Constants.ArbitrerExchangeName}/{request.GetType().TypeQueueName(arbitrerOptions)}");
 

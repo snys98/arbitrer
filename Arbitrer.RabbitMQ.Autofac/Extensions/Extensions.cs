@@ -1,6 +1,7 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Arbitrer.RabbitMQ;
 using Autofac;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,14 +13,15 @@ namespace Arbitrer
 {
   public static class Extensions
   {
-    public static ContainerBuilder AddArbitrerRabbitMQMessageDispatcher(this ContainerBuilder services, Action<MessageDispatcherOptions> config,
-      ILoggerFactory loggerFactory)
+    public static ContainerBuilder AddArbitrerRabbitMQMessageDispatcher(this ContainerBuilder services,
+        Action<MessageDispatcherOptions> config,
+        ILoggerFactory loggerFactory, JsonSerializerOptions jsonSerializerOptions)
     {
-      var options = new MessageDispatcherOptions();
+      var options = new MessageDispatcherOptions(jsonSerializerOptions);
       config(options);
       services.RegisterInstance(Options.Create(options)).SingleInstance();
       services.RegisterType<MessageDispatcher>().As<IExternalMessageDispatcher>().SingleInstance();
-        
+
       services.RegisterInstance(LoggerFactoryExtensions.CreateLogger<MessageDispatcher>(loggerFactory)).As<ILogger<MessageDispatcher>>();
       services.RegisterInstance(LoggerFactoryExtensions.CreateLogger<RequestsManager>(loggerFactory)).As<ILogger<RequestsManager>>();
       return services;

@@ -7,12 +7,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka.Admin;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 
 namespace Arbitrer.Kafka
 {
@@ -133,7 +133,7 @@ namespace Arbitrer.Kafka
     private async Task ConsumeChannelNotification<T>(string msg)
     {
       _logger.LogDebug("Elaborating notification : {Msg}", msg);
-      var message = JsonConvert.DeserializeObject<KafkaMessage<T>>(msg, _options.SerializerSettings);
+      var message = JsonSerializer.Deserialize<KafkaMessage<T>>(msg, _options.SerializerSettings);
       if (message == null)
       {
         _logger.LogError("Unable to deserialize message {Msg}", msg);
@@ -163,7 +163,7 @@ namespace Arbitrer.Kafka
     private async Task ConsumeChannelMessage<T>(string msg)
     {
       _logger.LogDebug("Elaborating message : {Msg}", msg);
-      var message = JsonConvert.DeserializeObject<KafkaMessage<T>>(msg, _options.SerializerSettings);
+      var message = JsonSerializer.Deserialize<KafkaMessage<T>>(msg, _options.SerializerSettings);
 
       if (message == null)
       {
@@ -176,7 +176,7 @@ namespace Arbitrer.Kafka
       try
       {
         var response = await mediator.Send(message.Message);
-        responseMsg = JsonConvert.SerializeObject(
+        responseMsg = JsonSerializer.Serialize(
           new KafkaReply
           {
             Reply = new Messages.ResponseMessage { Content = response, Status = Messages.StatusEnum.Ok },
@@ -186,7 +186,7 @@ namespace Arbitrer.Kafka
       }
       catch (Exception ex)
       {
-        responseMsg = JsonConvert.SerializeObject(
+        responseMsg = JsonSerializer.Serialize(
           new KafkaReply()
           {
             Reply = new Messages.ResponseMessage { Exception = ex, Status = Messages.StatusEnum.Exception },

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -10,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -183,11 +183,11 @@ namespace Arbitrer.RabbitMQ
         }
 
         _logger.LogDebug("Elaborating notification : {0}", Encoding.UTF8.GetString(msg));
-        var message = JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(msg), _options.SerializerSettings);
+        var message = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(msg), _options.SerializerSettings);
 
         var replyProps = _channel.CreateBasicProperties();
         replyProps.CorrelationId = ea.BasicProperties.CorrelationId;
-        
+
         arbitrer?.StopPropagating();
         await mediator.Publish(message);
 
@@ -225,18 +225,18 @@ namespace Arbitrer.RabbitMQ
 
         var msg = ea.Body.ToArray();
         _logger.LogDebug("Elaborating message : {0}", Encoding.UTF8.GetString(msg));
-        var message = JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(msg), _options.SerializerSettings);
+        var message = JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(msg), _options.SerializerSettings);
 
 
         var mediator = _provider.CreateScope().ServiceProvider.GetRequiredService<IMediator>();
         var response = await mediator.Send(message);
-        responseMsg = JsonConvert.SerializeObject(new Messages.ResponseMessage { Content = response, Status = Messages.StatusEnum.Ok },
+        responseMsg = JsonSerializer.Serialize(new Messages.ResponseMessage { Content = response, Status = Messages.StatusEnum.Ok },
           _options.SerializerSettings);
         _logger.LogDebug("Elaborating sending response : {0}", responseMsg);
       }
       catch (Exception ex)
       {
-        responseMsg = JsonConvert.SerializeObject(new Messages.ResponseMessage { Exception = ex, Status = Messages.StatusEnum.Exception },
+        responseMsg = JsonSerializer.Serialize(new Messages.ResponseMessage { Exception = ex, Status = Messages.StatusEnum.Exception },
           _options.SerializerSettings);
         _logger.LogError(ex, $"Error executing message of type {typeof(T)} from external service");
       }

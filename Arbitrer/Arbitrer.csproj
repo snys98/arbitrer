@@ -16,7 +16,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Deterministic>true</Deterministic>
     <RootNamespace>Arbitrer</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     
     <RepositoryUrl>https://github.com/teamdev-it/arbitrer</RepositoryUrl>
   </PropertyGroup>
@@ -33,6 +33,5 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.*" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.*" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.*" />
   </ItemGroup>
 </Project>

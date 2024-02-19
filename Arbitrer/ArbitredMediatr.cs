@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Arbitrer
 {
@@ -53,7 +53,7 @@ namespace Arbitrer
       {
         if (_allowRemoteRequest)
         {
-          _logger.LogDebug("Propagating: {Json}", JsonConvert.SerializeObject(notification));
+          _logger.LogDebug("Propagating: {Json}", JsonSerializer.Serialize(notification));
           await _arbitrer.SendRemoteNotification(notification);
         }
         else

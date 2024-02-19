@@ -1,7 +1,6 @@
 using MediatR;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System.Text;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -10,6 +9,7 @@ using admin = Confluent.Kafka.Admin;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
+using System.Text.Json;
 using Arbitrer.Messages;
 using System.Threading;
 
@@ -54,7 +54,7 @@ namespace Arbitrer.Kafka
     /// @see ProducerBuilder
     /// @see ConsumerBuilder
     /// @see IAdminClient
-    /// @see JsonConvert
+    /// @see JsonSerializer
     /// /
     public void InitConnection()
     {
@@ -80,7 +80,7 @@ namespace Arbitrer.Kafka
             if (consumeResult != null)
             {
               _logger.LogDebug("Response Message: {Msg}", consumeResult.Message.Value);
-              var reply = JsonConvert.DeserializeObject<KafkaReply>(consumeResult.Message.Value, this._options.SerializerSettings);
+              var reply = JsonSerializer.Deserialize<KafkaReply>(consumeResult.Message.Value, this._options.SerializerSettings);
 
               if (reply != null)
                 if (_callbackMapper.TryRemove(reply.CorrelationId, out var tcs))
@@ -104,7 +104,7 @@ namespace Arbitrer.Kafka
     public async Task<Messages.ResponseMessage<TResponse>> Dispatch<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
     {
       var correlationId = Guid.NewGuid().ToString();
-      var message = JsonConvert.SerializeObject(new KafkaMessage<TRequest>
+      var message = JsonSerializer.Serialize(new KafkaMessage<TRequest>
       {
         Message = request,
         CorrelationId = correlationId,
@@ -122,7 +122,7 @@ namespace Arbitrer.Kafka
       cancellationToken.Register(() => _callbackMapper.TryRemove(correlationId, out var tmp));
       var result = await tcs.Task;
 
-      var response = JsonConvert.DeserializeObject<KafkaReply<ResponseMessage<TResponse>>>(result, this._options.SerializerSettings);
+      var response = JsonSerializer.Deserialize<KafkaReply<ResponseMessage<TResponse>>>(result, this._options.SerializerSettings);
       return response.Reply;
     }
 
@@ -135,7 +135,7 @@ namespace Arbitrer.Kafka
     /// <returns>A Task representing the asynchronous operation.</returns>
     public async Task Notify<TRequest>(TRequest request, CancellationToken cancellationToken = default) where TRequest : INotification
     {
-      var message = JsonConvert.SerializeObject(request, _options.SerializerSettings);
+      var message = JsonSerializer.Serialize(request, _options.SerializerSettings);
 
       _logger.LogInformation($"Sending message to: {Consts.ArbitrerExchangeName}/{request.GetType().TypeQueueName(_arbitrerOptions)}");
 

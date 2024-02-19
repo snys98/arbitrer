@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Arbitrer.GRPC.Extensions;
 using Google.Protobuf.WellKnownTypes;
@@ -13,7 +14,6 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Type = System.Type;
 
 namespace Arbitrer.GRPC
@@ -80,18 +80,18 @@ namespace Arbitrer.GRPC
       {
         var msg = request.Body;
         _logger.LogDebug("Elaborating message : {0}", msg);
-        var message = JsonConvert.DeserializeObject<T>(msg, _options.SerializerSettings);
+        var message = JsonSerializer.Deserialize<T>(msg, _options.SerializerSettings);
 
 
         var mediator = _provider.CreateScope().ServiceProvider.GetRequiredService<IMediator>();
         var response = await mediator.Send(message);
-        responseMsg = JsonConvert.SerializeObject(new Messages.ResponseMessage { Content = response, Status = Messages.StatusEnum.Ok },
+        responseMsg = JsonSerializer.Serialize(new Messages.ResponseMessage { Content = response, Status = Messages.StatusEnum.Ok },
           _options.SerializerSettings);
         _logger.LogDebug("Elaborating sending response : {0}", responseMsg);
       }
       catch (Exception ex)
       {
-        responseMsg = JsonConvert.SerializeObject(new Messages.ResponseMessage { Exception = ex, Status = Messages.StatusEnum.Exception },
+        responseMsg = JsonSerializer.Serialize(new Messages.ResponseMessage { Exception = ex, Status = Messages.StatusEnum.Exception },
           _options.SerializerSettings);
         _logger.LogError(ex, $"Error executing message of type {typeof(T)} from external service");
       }
@@ -132,7 +132,7 @@ namespace Arbitrer.GRPC
         }
 
         _logger.LogDebug("Elaborating notification : {0}", msg);
-        var message = JsonConvert.DeserializeObject<T>(msg, _options.SerializerSettings);
+        var message = JsonSerializer.Deserialize<T>(msg, _options.SerializerSettings);
 
         arbitrer?.StopPropagating();
         await mediator.Publish(message);

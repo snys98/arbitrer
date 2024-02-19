@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System.Threading;
 using System.Text;
 using System;
@@ -11,11 +10,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
+using System.Text.Json;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.VisualBasic;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 
 namespace Arbitrer.GRPC
 {
@@ -57,7 +55,7 @@ namespace Arbitrer.GRPC
 
     public async Task<Messages.ResponseMessage<TResponse>> Dispatch<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
     {
-      var message = JsonConvert.SerializeObject(request, options.SerializerSettings);
+      var message = JsonSerializer.Serialize(request, options.SerializerSettings);
 
       var grpcClient = new GrpcServices.GrpcServicesClient(this.GetChannelFor<TRequest>());
       var result = await grpcClient.ManageArbitrerMessageAsync(new RequestMessage
@@ -65,7 +63,7 @@ namespace Arbitrer.GRPC
         Body = message,
         ArbitrerType = typeof(TRequest).TypeQueueName(arbitrerOptions)
       });
-      return JsonConvert.DeserializeObject<Messages.ResponseMessage<TResponse>>(result.Body, options.SerializerSettings);
+      return JsonSerializer.Deserialize<Messages.ResponseMessage<TResponse>>(result.Body, options.SerializerSettings);
     }
 
     /// <summary>
@@ -77,7 +75,7 @@ namespace Arbitrer.GRPC
     /// <returns>A task representing the asynchronous notification operation.</returns>
     public Task Notify<TRequest>(TRequest request, CancellationToken cancellationToken = default) where TRequest : INotification
     {
-      var message = JsonConvert.SerializeObject(request, options.SerializerSettings);
+      var message = JsonSerializer.Serialize(request, options.SerializerSettings);
 
       logger.LogInformation($"Sending notifications of: {typeof(TRequest).Name}/{request.GetType().TypeQueueName(arbitrerOptions)}");
 
@@ -96,7 +94,7 @@ namespace Arbitrer.GRPC
 
     public void Dispose()
     {
-      
+
     }
   }
 }

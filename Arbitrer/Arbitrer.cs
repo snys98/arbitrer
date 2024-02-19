@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 
 namespace Arbitrer
 {
@@ -73,12 +72,15 @@ namespace Arbitrer
     /// <returns>The location of the handler (<see cref="HandlerLocation"/>).</returns>
     public HandlerLocation GetLocation(Type t)
     {
-      switch (_options.Behaviour)
-      {
-        case ArbitrerBehaviourEnum.ImplicitLocal: return this.HasRemoteHandler(t) ? HandlerLocation.Remote : HandlerLocation.Local;
-        case ArbitrerBehaviourEnum.ImplicitRemote: return this.HasLocalHandler(t) ? HandlerLocation.Local : HandlerLocation.Remote;
-        default: return this.HasLocalHandler(t) ? HandlerLocation.Local : this.HasRemoteHandler(t) ? HandlerLocation.Remote : HandlerLocation.NotFound;
-      }
+        if (t.IsAssignableTo(typeof(IRequest)))
+        {
+            return HandlerLocation.Local;
+        }
+        if (t.IsAssignableTo(typeof(INotification)))
+        {
+            return HandlerLocation.Remote;
+        }
+        return HandlerLocation.NotFound;
     }
 
     /// <summary>

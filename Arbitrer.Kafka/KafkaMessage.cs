@@ -1,8 +1,8 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 
@@ -21,7 +21,6 @@ namespace Arbitrer.Kafka
     /// The <see cref="Message"/> property represents the message payload of type <typeparamref name="T"/>.
     /// </remarks>
     /// <typeparam name="T">The type of the message payload.</typeparam>
-    [JsonProperty(ItemTypeNameHandling = TypeNameHandling.All)]
     public T Message { get; set; }
 
     /// <summary>
